@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ali's Project</title>
+    <!-- Chosen Palette: Dark Playful Pastel with Bright Accents -->
+    <!-- Application Structure Plan: I have designed a single-page application with a clear header, an introduction section explaining the purpose of the Mollymawk test, and a main interactive "Modules" section. The "Modules" section uses a vertical tab navigation rail on the left to switch between detailed views for 'Working Memory', 'Time Sharing', and 'Spider Maze'. This structure is more interactive than simple modal pop-ups and allows for direct comparison and exploration within a single view. Each module view contains a detailed text description and an interactive radar chart visualizing the key cognitive skills tested, providing a richer, more data-driven presentation than the original static page. This transforms the content into an exploratory tool. -->
+    <!-- Visualization & Content Choices: Report Info: Module descriptions (Working Memory, Time Sharing, Spider Maze). Goal: To inform and compare the cognitive demands of each module. Viz/Presentation Method: A vertical tabbed interface organizes the content. For each module, a Chart.js radar chart represents a breakdown of the cognitive skills involved (e.g., Attention, Multitasking, Spatial Reasoning). Interaction: Users click on a module name in the navigation rail to display its corresponding description and chart. The charts feature interactive tooltips for detail on demand. Justification: This approach is more engaging than modals. Radar charts are excellent for comparing multiple variables, making them ideal for visualizing and comparing the skill profiles of each test module, adding a data visualization layer as requested. Library/Method: Chart.js for radar charts; HTML/CSS/Tailwind for the tabbed layout and UI. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #2C3E50; /* Deep, muted blue */
+            color: #E0E0E0; /* Light grey for general text */
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Fredoka One', cursive;
+            color: #FFFFFF; /* White for headings */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 550px;
+            height: 450px;
+            max-height: 60vh;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .nav-button-active {
+            background-color: #FFC107; /* Bright, warm yellow */
+            color: #222222; /* Dark text */
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.4);
+        }
+        .nav-button {
+            transition: all 0.3s ease-in-out;
+            border-radius: 1.5rem;
+        }
+        .nav-button:hover {
+            background-color: #4A657C; /* Lighter blue on hover */
+            color: #FFFFFF;
+        }
+        .launch-button {
+            background-color: #FF7043; /* Vibrant orange */
+            color: #FFFFFF;
+            font-weight: bold;
+            padding: 0.75rem 1.5rem;
+            border-radius: 1.5rem;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 4px 8px rgba(255, 112, 67, 0.4);
+        }
+        .launch-button:hover {
+            background-color: #FF8A65; /* Lighter orange on hover */
+            box-shadow: 0 6px 12px rgba(255, 112, 67, 0.5);
+        }
+        .bg-panel {
+            background-color: #34495E; /* Slightly lighter dark blue for panels */
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* Softer shadow */
+        }
+        .bg-sub-panel {
+            background-color: #3E5B75; /* Mid-tone blue */
+            border-radius: 1rem;
+        }
+        /* Styles for the new heart button and modal */
+        .heart-button {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            background-color: #FFC107; /* Yellow */
+            color: #222222; /* Dark text */
+            font-family: 'Fredoka One', cursive;
+            padding: 0.75rem 1.25rem;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.4);
+            transition: all 0.3s ease-in-out;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 4rem;
+            height: 4rem;
+            cursor: pointer;
+            border: none;
+        }
+        .heart-button:hover {
+            background-color: #FFD54F; /* Lighter yellow on hover */
+            box-shadow: 0 6px 12px rgba(255, 193, 7, 0.5);
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background-color: #34495E;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            max-width: 90%;
+            width: 500px;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-out;
+            border: 2px solid #FFC107; /* Yellow border */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .modal-close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #FFFFFF;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .modal-close-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-[#E0E0E0]">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold">SunExpress & Mollymawk</h1>
+        </header>
+
+        <main>
+            <section id="introduction" class="bg-panel p-6 md:p-8 mb-10">
+                <h2 class="text-2xl font-bold mb-3 text-center">About the Assessment</h2>
+                <p class="text-[#C0C0C0] leading-relaxed max-w-4xl mx-auto text-center">
+                    This application provides an interactive overview of the psychotechnical test developed by SunExpress in partnership with Mollymawk Psychometrics. This assessment is a critical component of the pilot recruitment process for airlines like SunExpress and Cargolux. It is designed to evaluate key cognitive abilities essential for aviation safety and performance. Use the navigator below to explore the distinct modules that comprise the test, understand their objectives, and see a visual breakdown of the cognitive skills each one targets.
+                </p>
+                <div class="text-center mt-6">
+                    <a href="https://careers.atpl.tv/tr/mollymawk-11/mollymawk-testi-nedir-30" target="_blank" rel="noopener noreferrer" class="launch-button inline-flex items-center gap-2">
+                        More Info... <span class="text-xl">💡</span>
+                    </a>
+                </div>
+            </section>
+
+            <section id="modules" class="bg-panel p-6 md:p-8">
+                <h2 class="text-2xl font-bold mb-6 text-center">Module Explorer</h2>
+                <div class="flex flex-col md:flex-row gap-8 min-h-[600px]">
+
+                    <nav id="module-nav" class="md:w-1/4 flex flex-row md:flex-col justify-center md:justify-start gap-2 border-b-2 md:border-b-0 md:border-r-2 border-[#4A657C] pb-4 md:pb-0 md:pr-4">
+                        <button data-module="workingMemory" class="nav-button w-full text-left p-3 rounded-3xl flex items-center gap-3">
+                            <span class="text-2xl">🧠</span> Working Memory
+                        </button>
+                        <button data-module="timeSharing" class="nav-button w-full text-left p-3 rounded-3xl flex items-center gap-3">
+                            <span class="text-2xl">⏰</span> Time Sharing
+                        </button>
+                        <button data-module="spiderMaze" class="nav-button w-full text-left p-3 rounded-3xl flex items-center gap-3">
+                            <span class="text-2xl">🕸️</span> Spider Maze
+                        </button>
+                    </nav>
+
+                    <div id="module-content" class="md:w-3/4">
+                        <div id="workingMemoryContent" class="module-panel">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                                <div class="text-content">
+                                    <h3 class="text-3xl font-bold mb-4">Working Memory</h3>
+                                    <p class="text-[#C0C0C0] leading-relaxed mb-4">This module assesses your ability to hold and manipulate information under cognitive load, requiring strong short-term recall and attention. You must track multiple constraints simultaneously while performing a selection task.</p>
+                                    <div class="bg-sub-panel p-4 rounded-xl">
+                                        <h4 class="font-semibold mb-2">Key Rules & Tasks:</h4>
+                                        <ul class="list-disc list-inside text-[#C0C0C0] space-y-2">
+                                            <li>Simultaneously maintain a bar's level by pressing the 'A' key.</li>
+                                            <li>Use arrow keys to navigate and select symbols.</li>
+                                            <li>You must NOT select: the forbidden symbol, the symbol displayed by the computer, or the symbol spoken by the computer.</li>
+                                        </ul>
+                                    </div>
+                                    <a href="https://gozioscan.github.io/workingmemlast/" target="_blank" rel="noopener noreferrer" class="launch-button inline-block mt-6">Launch Module</a>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="workingMemoryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="timeSharingContent" class="hidden module-panel">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                                <div class="text-content">
+                                    <h3 class="text-3xl font-bold mb-4">Time Sharing</h3>
+                                    <p class="text-[#C0C0C0] leading-relaxed mb-4">This module evaluates your multitasking capabilities by requiring you to manage three distinct tasks concurrently, simulating the divided attention required in a cockpit.</p>
+                                    <div class="bg-sub-panel p-4 rounded-xl">
+                                        <h4 class="font-semibold mb-2">Key Rules & Tasks:</h4>
+                                        <ul class="list-disc list-inside text-[#C0C0C0] space-y-2">
+                                            <li><strong>Navigation:</strong> Guide an aircraft with arrow keys to earn points.</li>
+                                            <li><strong>Tracking:</strong> Monitor gauges and press corresponding keys (C, V, B, N) when a needle enters the red zone.</li>
+                                            <li><strong>Auditory:</strong> Listen to questions, input numeric answers, and press ENTER.</li>
+                                        </ul>
+                                    </div>
+                                    <a href="https://thypsikometrik.com/timeshare/index.html" target="_blank" rel="noopener noreferrer" class="launch-button inline-block mt-6">Launch Module</a>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="timeSharingChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="spiderMazeContent" class="hidden module-panel">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                                <div class="text-content">
+                                    <h3 class="text-3xl font-bold mb-4">Spider Maze</h3>
+                                    <p class="text-[#C0C0C0] leading-relaxed mb-4">This module tests your spatial reasoning and mental rotation abilities. You must visualize movement across a 3D space from a first-person perspective.</p>
+                                    <div class="bg-sub-panel p-4 rounded-xl">
+                                        <h4 class="font-semibold mb-2">Key Rules & Tasks:</h4>
+                                        <ul class="list-disc list-inside text-[#C0C0C0] space-y-2">
+                                            <li>Follow a sequence of "Turn" and "Move" commands.</li>
+                                            <li>Execute all commands from the spider's perspective on a cube.</li>
+                                            <li>After all commands, identify the spider's final cube and face location on a selection screen.</li>
+                                        </ul>
+                                    </div>
+                                    <a href="https://gozioscan.github.io/spatialspider/" target="_blank" rel="noopener noreferrer" class="launch-button inline-block mt-6">Launch Module</a>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="spiderMazeChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center text-[#777777] mt-10 text-sm">
+            <p>&copy; 2025 ALIYASA. This is an informational tool and not an official testing platform.</p>
+        </footer>
+    </div>
+    
+    <!-- Heart Button and Modal HTML -->
+    <button id="heartButton" class="heart-button text-lg">
+        <span class="text-3xl">❤️</span>
+    </button>
+
+    <div id="heartModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button id="closeHeartModal" class="modal-close-button">&times;</button>
+            <p class="text-white text-xl md:text-2xl font-bold">Etli nohut yiyen kızın götünü yalamam.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const moduleData = {
+                labels: ['Attention', 'Multitasking', 'Spatial Reasoning', 'Mental Rotation', 'Planning', 'Short-term Recall'],
+                workingMemory: {
+                    title: 'Working Memory',
+                    data: [8, 5, 3, 2, 4, 9],
+                },
+                timeSharing: {
+                    title: 'Time Sharing',
+                    data: [7, 9, 4, 3, 6, 6],
+                },
+                spiderMaze: {
+                    title: 'Spider Maze',
+                    data: [5, 2, 9, 8, 7, 4],
+                }
+            };
+
+            const chartOptions = {
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(255, 255, 255, 0.1)' /* Subtle white lines */
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.15)' /* Slightly more visible white grid */
+                        },
+                        pointLabels: {
+                            font: {
+                                size: 14
+                            },
+                            color: '#FFFFFF' /* White for labels */
+                        },
+                        ticks: {
+                            backdropColor: '#34495E', /* Matching main panel background */
+                            color: '#C0C0C0', /* Lighter grey for tick labels */
+                            stepSize: 2
+                        },
+                        min: 0,
+                            max: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)' /* Light tooltip background */
+                        }
+                    }
+                };
+
+                const createChart = (ctx, label, data) => {
+                    return new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: moduleData.labels,
+                            datasets: [{
+                                label: label,
+                                data: data,
+                                fill: true,
+                                backgroundColor: 'rgba(255, 193, 7, 0.4)', /* Bright yellow with transparency */
+                                borderColor: 'rgb(255, 193, 7)', /* Bright yellow */
+                                pointBackgroundColor: 'rgb(255, 193, 7)',
+                                pointBorderColor: '#fff',
+                                pointHoverBackgroundColor: '#fff',
+                                pointHoverBorderColor: 'rgb(255, 193, 7)'
+                            }]
+                        },
+                        options: chartOptions
+                    });
+                };
+
+                const charts = {
+                    workingMemory: createChart(document.getElementById('workingMemoryChart').getContext('2d'), moduleData.workingMemory.title, moduleData.workingMemory.data),
+                    timeSharing: createChart(document.getElementById('timeSharingChart').getContext('2d'), moduleData.timeSharing.title, moduleData.timeSharing.data),
+                    spiderMaze: createChart(document.getElementById('spiderMazeChart').getContext('2d'), moduleData.spiderMaze.title, moduleData.spiderMaze.data)
+                };
+
+                const navButtons = document.querySelectorAll('#module-nav button');
+                const contentPanels = document.querySelectorAll('.module-panel');
+
+                function switchModule(moduleName) {
+                    navButtons.forEach(button => {
+                        if (button.dataset.module === moduleName) {
+                            button.classList.add('nav-button-active');
+                            button.classList.remove('hover:bg-[#4A657C]');
+                        } else {
+                            button.classList.remove('nav-button-active');
+                            button.classList.add('hover:bg-[#4A657C]');
+                        }
+                    });
+
+                    contentPanels.forEach(panel => {
+                        panel.classList.add('hidden');
+                    });
+                    
+                    document.getElementById(`${moduleName}Content`).classList.remove('hidden');
+                }
+
+                navButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        switchModule(button.dataset.module);
+                    });
+                });
+
+                switchModule('workingMemory');
+
+                // Logic for the new heart button and modal
+                const heartButton = document.getElementById('heartButton');
+                const heartModal = document.getElementById('heartModal');
+                const closeHeartModalButton = document.getElementById('closeHeartModal');
+
+                heartButton.addEventListener('click', () => {
+                    heartModal.classList.remove('hidden');
+                });
+
+                closeHeartModalButton.addEventListener('click', () => {
+                    heartModal.classList.add('hidden');
+                });
+
+                // Close modal if user clicks outside of the modal content
+                heartModal.addEventListener('click', function(event) {
+                    if (event.target === heartModal) {
+                        heartModal.classList.add('hidden');
+                    }
+                });
+            });
+    </script>
+
+</body>
+</html>
